@@ -1,0 +1,9 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  @apply bg-emerald-50 text-slate-800;
+  font-family: Inter, system-ui, sans-serif;
+}
+.leaflet-container { height: 320px; width: 100%; border-radius: 1rem; }
