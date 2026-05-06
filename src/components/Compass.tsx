@@ -24,7 +24,8 @@ export default function Compass({ qiblaBearing, heading, relative, instruction }
     <p className='mt-3 text-center font-semibold text-primary'>{instruction}</p>
     <p className='text-center text-sm'>Kiblat {qiblaBearing?.toFixed(1) ?? '-'}° • Heading {heading?.toFixed(1) ?? '-'}° • Relatif {relative?.toFixed(1) ?? '-'}°</p>
     <ul className='mt-3 list-disc pl-5 text-sm text-slate-600'>
-      <li>Pegang HP mendatar atau sejajar arah badan.</li>
+      <li>Pegang HP mendatar dan arahkan bagian atas layar ke depan badan.</li>
+      <li>Jika layar diputar portrait/landscape, indikator tetap mengikuti orientasi layar.</li>
       <li>Putar badan hingga indikator kiblat berada di depan.</li>
       <li>Jika arah terasa tidak stabil, kalibrasi kompas dengan gerakan angka delapan.</li>
     </ul>
