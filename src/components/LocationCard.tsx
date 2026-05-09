@@ -30,7 +30,7 @@ export default function LocationCard(p: Props) {
     <div>Sumber Lokasi<div className='font-bold capitalize'>{p.source ?? '-'}</div></div>
     <div>Latitude<div>{formatCoordinate(p.lat)}</div></div>
     <div>Longitude<div>{formatCoordinate(p.lng)}</div></div>
-    <div>Akurasi<div>{p.accuracy ? `${Math.round(p.accuracy)} m` : '-'}</div></div>
+    <div>Akurasi<div>{typeof p.accuracy === 'number' ? `${Math.round(p.accuracy)} m` : '-'}</div></div>
     <div className='flex flex-wrap gap-2'><StatusBadge label={p.locationStatus} /><StatusBadge label={p.compassStatus} /></div>
   </div>;
 }
