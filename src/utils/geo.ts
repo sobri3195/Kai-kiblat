@@ -7,6 +7,12 @@ export type Coordinates = {
   source?: CoordinateSource;
 };
 
+export type LocationHistoryItem = Coordinates & {
+  id: string;
+  label: string;
+  savedAt: number;
+};
+
 export function isHttpsContext() {
   if (typeof window === 'undefined') return false;
   return window.isSecureContext || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
