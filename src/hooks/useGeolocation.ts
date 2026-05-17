@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import type { CoordinateSource, Coordinates } from '../utils/geo';
+import type { CoordinateSource, Coordinates, LocationHistoryItem } from '../utils/geo';
 import { isHttpsContext, isValidCoordinates } from '../utils/geo';
 
 type GeoStatus =
@@ -14,6 +14,8 @@ type GeoStatus =
   | 'Lokasi tidak valid';
 
 const KEY = 'kai-kiblat:last-location';
+const HISTORY_KEY = 'kai-kiblat:location-history';
+const MAX_HISTORY = 6;
 const HIGH_ACCURACY_OPTIONS: PositionOptions = { enableHighAccuracy: true, timeout: 20000, maximumAge: 0 };
 const WATCH_OPTIONS: PositionOptions = { enableHighAccuracy: true, maximumAge: 1000, timeout: 30000 };
 const FALLBACK_OPTIONS: PositionOptions = { enableHighAccuracy: false, timeout: 12000, maximumAge: 60000 };
@@ -30,6 +32,37 @@ function readSavedLocation(): Coordinates | null {
     window.localStorage.removeItem(KEY);
     return null;
   }
+}
+
+
+function readLocationHistory(): LocationHistoryItem[] {
+  if (typeof window === 'undefined') return [];
+
+  try {
+    const raw = window.localStorage.getItem(HISTORY_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw) as LocationHistoryItem[];
+    return parsed.filter((item) => isValidCoordinates(item.lat, item.lng)).slice(0, MAX_HISTORY);
+  } catch {
+    window.localStorage.removeItem(HISTORY_KEY);
+    return [];
+  }
+}
+
+function getHistoryLabel(coords: Coordinates) {
+  if (coords.source === 'gps') return 'Lokasi GPS';
+  if (coords.source === 'search') return 'Hasil pencarian';
+  return 'Lokasi manual';
+}
+
+function toHistoryItem(coords: Coordinates): LocationHistoryItem {
+  const savedAt = Date.now();
+  return {
+    ...coords,
+    id: `${coords.source ?? 'manual'}-${coords.lat.toFixed(5)}-${coords.lng.toFixed(5)}-${savedAt}`,
+    label: getHistoryLabel(coords),
+    savedAt
+  };
 }
 
 function getGeolocationErrorMessage(error: GeolocationPositionError) {
@@ -50,14 +83,34 @@ function getGeolocationErrorMessage(error: GeolocationPositionError) {
 
 export function useGeolocation() {
   const [coords, setCoords] = useState<Coordinates | null>(readSavedLocation);
+  const [history, setHistory] = useState<LocationHistoryItem[]>(readLocationHistory);
   const [status, setStatus] = useState<GeoStatus>(coords ? 'Lokasi aktif' : 'Siap mencari lokasi');
   const [error, setError] = useState<string>('');
   const watchRef = useRef<number | null>(null);
 
   const saveCoords = (next: Coordinates) => {
     setCoords(next);
+    setHistory((current) => {
+      const withoutDuplicate = current.filter((item) => Math.abs(item.lat - next.lat) > 0.0001 || Math.abs(item.lng - next.lng) > 0.0001 || item.source !== next.source);
+      const updated = [toHistoryItem(next), ...withoutDuplicate].slice(0, MAX_HISTORY);
+      try {
+        window.localStorage.setItem(HISTORY_KEY, JSON.stringify(updated));
+      } catch {
+        // Browser private mode or storage quota can block localStorage; live state still works.
+      }
+      return updated;
+    });
     try {
       window.localStorage.setItem(KEY, JSON.stringify(next));
+    } catch {
+      // Browser private mode or storage quota can block localStorage; live state still works.
+    }
+  };
+
+  const clearHistory = () => {
+    setHistory([]);
+    try {
+      window.localStorage.removeItem(HISTORY_KEY);
     } catch {
       // Browser private mode or storage quota can block localStorage; live state still works.
     }
@@ -170,5 +223,5 @@ export function useGeolocation() {
     return true;
   };
 
-  return { coords, status, error, locate, setManualCoords };
+  return { coords, status, error, history, locate, setManualCoords, clearHistory };
 }
